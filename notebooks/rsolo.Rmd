@@ -19,15 +19,25 @@ You'll be working with data on each of 145 school districts and the State of Ten
 Create an RMarkdown file to answer the following questions.
 
 ```{r}
-library(readr)
-library(dplyr)
+library(tidyverse)
 ```
+
 ## Q1: Read in `districts.csv` into a tibble named `districts`. How many rows and columns does it contain?
 ```{r}
 districts <- read_csv('../data/districts.csv')
 districts
 ```
 # 146 rows, 27 columns
+```{r}
+districts %>%
+  summarize(num_rows = n())
+```
+#another way to get row number:
+```{r}
+districts %>%
+  count(name = 'num_rows')
+```
+
 ## Q2: Notice that the first row corresponds to the whole State of Tennessee. Remove this row and save the result back to `districts`.
 ```{r}
 districts <- districts[-1,]
@@ -49,28 +59,51 @@ alg1_eng1_below_50
 # shape is 8 x 27
 ## Q5: Which district has the lowest graduation rate?
 ```{r}
-
+grad_min <- min(districts[,'grad'], na.rm = TRUE)
+grad_min
 ```
+```{r}
+districts %>%
+  filter(grad == 11.1)
+```
+
 ## Q6: Which district has the highest dropout rate?
 ```{r}
-
+dropout_max <- max(districts[, 'dropout'], na.rm = TRUE)
+dropout_max
 ```
+
 ## Q7: Within the Mid Cumberland region, which district has the highest ACT composite?
 ```{r}
-
+districts %>%
+  filter(dropout == 27.6)
 ```
 ## Q8:Create a histogram showing the distribution of graduation rates. What can you say about this distribution?
 ```{r}
-
+ggplot(districts, aes(x = grad)) +
+  geom_histogram(color = 'black', fill = 'white')
 ```
+# The distribution is right skewed: there are more schools with high graduation rate among their studetns than ones with lower graduation rate.  
 ## Q9:Create a scatter plot to compare alg_1 proficiency rates to alg_2 rates. What do you notice? Facet this plot by region. Does anything stand out when you facet the plots?
 ```{r}
-
+ggplot(districts, aes(x = alg_1, y = alg_2)) +
+  geom_point() +
+  geom_smooth(method = lm) +
+  facet_grid(~ region)
 ```
 ## Q10: Create a bar chart showing the total enrollment by region. Which region has the highest total enrollment? Which has the smallest?
 ```{r}
-
+enrollment_by_region <-
+districts %>%
+group_by(region) %>%
+summarize(total_enrollments = sum(enrollment, na.rm = TRUE)) #put the na.rm argument inside sum
+enrollment_by_region
 ```
+```{r}
+ggplot(enrollment_by_region, aes(x= region) +
+geom_bar()
+```
+
 ## Q11: When creating this bar chart you may have noticed that some districts have missing enrollment values. For how many districts is this the case?
 ```{r}
 
