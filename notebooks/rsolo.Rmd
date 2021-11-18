@@ -41,11 +41,10 @@ districts %>%
 ## Q2: Notice that the first row corresponds to the whole State of Tennessee. Remove this row and save the result back to `districts`.
 ```{r}
 districts <- districts[-1,]
-districts
 ```
 ## Q3: How many districts have a proficiency rate of at least 80% for both alg_1 and eng_1?
 ```{r}
-alg1_eng1_above_80 <- districts %>%
+districts %>%
   filter(alg_1 >= 80 & eng_1 >= 80) 
 alg1_eng1_above_80
 ```
@@ -59,7 +58,7 @@ alg1_eng1_below_50
 # shape is 8 x 27
 ## Q5: Which district has the lowest graduation rate?
 ```{r}
-grad_min <- min(districts[,'grad'], na.rm = TRUE)
+min(districts[,'grad'], na.rm = TRUE)
 grad_min
 ```
 ```{r}
@@ -69,8 +68,7 @@ districts %>%
 
 ## Q6: Which district has the highest dropout rate?
 ```{r}
-dropout_max <- max(districts[, 'dropout'], na.rm = TRUE)
-dropout_max
+max(districts[, 'dropout'], na.rm = TRUE)
 ```
 
 ## Q7: Within the Mid Cumberland region, which district has the highest ACT composite?
@@ -93,42 +91,92 @@ ggplot(districts, aes(x = alg_1, y = alg_2)) +
 ```
 ## Q10: Create a bar chart showing the total enrollment by region. Which region has the highest total enrollment? Which has the smallest?
 ```{r}
-enrollment_by_region <-
-districts %>%
+ sum_enrollment_by_region <- districts %>%
 group_by(region) %>%
 summarize(total_enrollments = sum(enrollment, na.rm = TRUE)) #put the na.rm argument inside sum
-enrollment_by_region
 ```
+
 ```{r}
-ggplot(enrollment_by_region, aes(x= region) +
-geom_bar()
+ggplot(sum_enrollment_by_region, aes(x= region, y = total_enrollments)) +
+geom_col()
 ```
 
 ## Q11: When creating this bar chart you may have noticed that some districts have missing enrollment values. For how many districts is this the case?
 ```{r}
-
+districts %>%
+group_by(region) %>%
+summarize(total_enrollments = sum(enrollment)) #put the na.rm argument inside sum
 ```
+```{r}
+districts %>%
+group_by(region) %>%
+summarize(null_enrollments = is.na(sum(enrollment))) #put the na.rm argument inside sum
+```
+
 ## Q12: What is the mean graduation rate across all districts? What might be wrong with using just the regular mean to assess average graduation rates?
 ```{r}
-
+districts %>% 
+  summarize(graduation_mean = mean(grad, na.rm = TRUE))
 ```
+
+#groupby will not change the mean result. 
 ## Q13: Redo the previous question but use a weighted average (`weighted.mean`) graduation across all districts, weighing by enrollment. How much does this change your answer? Can you explain using the data the reason for the big change from using the mean?
 ```{r}
-
+districts %>% 
+  filter(enrollment != 'NA') %>%  #or:filter(!is.na(enrollment)) 
+  summarize(weighted_graduation_mean = weighted.mean(grad, enrollment, na.rm = TRUE))
 ```
 ## Q14: Create a boxplot showing enrollment rates per region. Does anything stand out?
 ```{r}
+ggplot(districts, aes(x = region, y = enrollment)) + 
+geom_boxplot()
+```
+# I can also group_by for this
+```{r}
+enrollment_by_region <- 
+  districts %>% 
+  group_by(region)
+ggplot(enrollment_by_region, aes(x = region, y = enrollment)) + 
+geom_boxplot()
 
 ```
+
 ## Q15:Create a boxplot showing graduation rates per region. Does anything stand out?
 ```{r}
-
+ggplot(districts, aes(x = region, y = grad)) + 
+geom_boxplot()
 ```
 ## Q16: Find the weighted average of graduation rates by region using enrollment as weights. Compare the results you get for the weighted average to what you see from the boxplots. Can you explain any discrepancy?
 ```{r}
+districts %>% 
+  group_by(region) %>% 
+  filter(enrollment != 'NA') %>% 
+  summarize(weighted_graduation_mean = weighted.mean(grad, enrollment, na.rm = TRUE)) %>% 
+  arrange(desc(weighted_graduation_mean))
+```
+## Q17:For many districts, values for `alg_2` are lower than for `alg_1`. Create a histogram showing the distribution of differences (`alg_1` - `alg_2`). 
+```{r}
+districts <-districts %>% 
+  mutate(alg12_diff = alg_1 - alg_2)
+districts
 
 ```
-## Q17:For many districts, values for `alg_2` are lower than for `alg_1`. Create a histogram showing the distribution of differences (`alg_1` - `alg_2`). Which school had the largest drop from `alg_1` to `alg_2`? For what percentage of schools is it true that `alg_2` is larger than `alg_1`? Is there a similar dropoff for `eng_2` and `eng_3`?
+```{r}
+  
+districts %>%
+  filter(alg12_diff != 'NA') %>% 
+  arrange(desc(alg12_diff)) %>% 
+  ggplot(aes(x = alg_1-alg_2)) +
+  geom_histogram(color = 'white')
+```
+## Which school had the largest drop from `alg_1` to `alg_2`? For what percentage of schools is it true that `alg_2` is larger than `alg_1`? 
+```{r}
+districts %>% 
+  arrange(desc(alg12_diff)) %>% 
+  slice_head()
+```
+
+## Is there a similar dropoff for `eng_2` and `eng_3`?
 ```{r}
 
 ```
