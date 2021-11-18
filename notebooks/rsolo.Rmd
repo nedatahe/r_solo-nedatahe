@@ -20,6 +20,7 @@ Create an RMarkdown file to answer the following questions.
 
 ```{r}
 library(tidyverse)
+library(corrr)
 ```
 
 ## Q1: Read in `districts.csv` into a tibble named `districts`. How many rows and columns does it contain?
@@ -166,7 +167,7 @@ districts
 districts %>%
   filter(alg12_diff != 'NA') %>% 
   arrange(desc(alg12_diff)) %>% 
-  ggplot(aes(x = alg_1-alg_2)) +
+  ggplot(aes(x = alg12_diff)) +
   geom_histogram(color = 'white')
 ```
 ## Which school had the largest drop from `alg_1` to `alg_2`? For what percentage of schools is it true that `alg_2` is larger than `alg_1`? 
@@ -178,23 +179,55 @@ districts %>%
 
 ## Is there a similar dropoff for `eng_2` and `eng_3`?
 ```{r}
-
+districts <-districts %>% 
+  mutate(eng23_diff = eng_2 - eng_3)
+districts
 ```
+```{r}
+districts %>% 
+  filter(eng23_diff != 'NA') %>% 
+  arrange(desc(eng23_diff)) %>% 
+  ggplot(aes(x = eng23_diff)) +
+  geom_histogram(color = 'white')
+```
+
 ## Q18: You may have noticed that a lot of rows are missing values. Which district has the largest number of missing values? What do you notice about schools that have a lot of missing values?
 ```{r}
-
+districts <- districts %>% 
+  mutate(row_null_count = rowSums(is.na(districts))) %>% 
+  arrange(desc(row_null_count))
+districts
 ```
-## Q19: Find the correlation between graduation rate and all other variables. Create a horizontal bar chart showing these correlations. Make sure that your plot is ordered by correlation values. What do you notice from these correlations?
 ```{r}
+districts %>% 
+  filter(row_null_count == 17)
+```
+
+
+## Q19: Find the correlation between graduation rate and all other variables. Create a horizontal bar chart showing these correlations. Make sure that your plot is ordered by correlation values. What do you notice from these correlations?
+
+```{r}
+districts %>% 
+  select(where(is.numeric)) %>% 
+  correlate() %>%
+  focus(grad) %>% 
+  arrange(desc(grad)) %>% 
+  ggplot(aes(x = term, y = grad)) +
+  geom_col()
 
 ```
 ## Q20: Create a scatterplot for `grad` vs. `suspended`. Does what you see make sense given your answer from the previous part?
 ```{r}
-
+ggplot(districts, aes(x = grad, y = suspended)) +
+  geom_point() 
+  #geom_smooth(method = lm) 
+  #facet_grid(~ region)
 ```
 ## Q21: Create a linear regression model using `lm` with target variable `grad` and predictor variable `suspended`. What R^2 value does this model have? What is the interpretation of this number?
 ```{r}
-
+ggplot(districts, aes(x = grad, y = suspended)) +
+  geom_point() +
+  geom_smooth(method = lm) 
 ```
 ## Q22: Add the regression line to your scatterplot using `geom_smooth` with `method='lm'`. How do you feel about the regression line after seeing it plotted on the scatterplot?
 ```{r}
