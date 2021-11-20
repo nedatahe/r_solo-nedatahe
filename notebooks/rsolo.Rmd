@@ -42,7 +42,7 @@ districts %>%
 
 ## Q2: Notice that the first row corresponds to the whole State of Tennessee. Remove this row and save the result back to `districts`.
 ```{r}
-districts <- districts[-1,]
+districts <- districts[-1,] #or:df %>% slice(-1)
 ```
 ## Q3: How many districts have a proficiency rate of at least 80% for both alg_1 and eng_1?
 ```{r}
@@ -226,47 +226,21 @@ ggplot(districts, aes(x = grad, y = suspended)) +
 ```
 ## Q21: Create a linear regression model using `lm` with target variable `grad` and predictor variable `suspended`. What R^2 value does this model have? What is the interpretation of this number?
 ```{r}
-grad_suspended_lm <- lm(grad ~ suspended , data = districts) #lm provides average expected values (but mean is not all the story)
-grad_suspended_lm
-summary(grad_suspended_lm)
-```
-```{r}
-grad_suspended_predicted_values <- predict(grad_suspended_lm , data = districts)
-grad_suspended_predicted_values
-```
-```{r}
-districts %>% 
-  mutate(prediction = predict(grad_suspended_lm , newdata = districts)) %>% 
-  ggplot(aes(x = grad, y = suspended)) +
-  geom_point() +
-  geom_line(aes(x = grad, y = prediction))
-  
- 
-```
-
-```{r}
-districts %>% 
+lm_gs <- districts %>% 
   cbind(predict(grad_suspended_lm, districts, interval = c('confidence'), level = 0.95)) %>% 
   ggplot(aes(x = grad, y = suspended)) +
   geom_point() +
-  geom_line(aes(x = grad, y = fit)) +
-  geom_ribbon(aes(ymin = lwr, ymax = upr), fill = 'cornflowerblue', alpha = 0.2)
+  geom_smooth(method = 'lm', formula = y ~ x, color = "blue") 
+lm_gs
 ```
 ```{r}
-districts %>%  #reasonable range of values for the variable that 95 percent of cases will be within this band
-  cbind(predict(grad_suspended_lm, districts, interval = c('prediction'), level = 0.95)) %>% 
-  ggplot(aes(x = grad, y = suspended)) +
-  geom_point() +
-  geom_line(aes(x = grad, y = fit)) +
-  geom_ribbon(aes(ymin = lwr, ymax = upr), fill = 'cornflowerblue', alpha = 0.2)
+linear_model = lm(grad~suspended, data = districts) #Create the linear regression
+summary(linear_model)
+summary(linear_model)$r.squared
 ```
 
 ## Q22: Add the regression line to your scatterplot using `geom_smooth` with `method='lm'`. How do you feel about the regression line after seeing it plotted on the scatterplot?
-```{r}
-ggplot(districts, aes(x = grad, y = suspended)) +
-  geom_point() +
-  geom_smooth(method = lm) 
-```
+
 ## Q23: **Continued Exploration and Practice** Read in the school-level testing data for 2014, available [here](https://www.tn.gov/content/dam/tn/education/data/data_2014_school_base.xlsx). You might find the readxl library useful for this task. If you use this library, be sure to look at the `na` argument for the `read_excel` function.
 ```{r}
 testing <- read_excel('../data/data_2014_school_base.xlsx', na = c('*', '**')) #data has lots of single and double starts; this turns them into NA
@@ -275,20 +249,39 @@ testing
 ## Q24:How many schools have at least 20 percent of students below bsc for Algebra I? Which districts do these schools belong to?
 ```{r}
 testing %>% 
-  group_by(subject) %>% 
-  
+  filter(grade == 'All Grades' & subgroup == 'All Students' & subject == 'Algebra I' & pct_below_bsc >= 20) %>% 
+  count()
+```
+```{r}
+testing %>% 
+  filter(grade == 'All Grades' & subgroup == 'All Students' & subject == 'Algebra I' & pct_below_bsc >= 20) %>% 
+  distinct(system_name)
 ```
 ## Q25:How many schools have at least 20 percent of students below bsc for _both_ Algebra I and English I?
 ```{r}
-
+testing %>% 
+  filter(grade == 'All Grades' & subgroup == 'All Students' & subject == c('Algebra I', 'English I') & pct_below_bsc >= 20) %>% 
+  count()
 ```
 ## Q26: Which grade has the highest pct_adv for Algebra I? Plot the average pct_adv per grade level as a bar chart. Make sure that the bars are ordered by grade level.
 ```{r}
-
+adv_per_grade <- testing %>% 
+  filter(grade !='All Grades' & subject == 'Algebra I' & subgroup == 'All Students') %>% 
+  group_by(grade) %>% 
+  summarise(pct_adv_mean = mean(pct_adv, na.rm = T)) %>% 
+  arrange(desc(pct_adv_mean))  #grades 6 and 7 can be taken out by !is.na(pct_adv) in the filter argument (do not teach algebra)
+adv_per_grade
 ```
+
+```{r}
+ggplot(adv_per_grade, aes(x = as.numeric(grade), y = pct_adv_mean)) + #it is important to check if the values are numeric
+  geom_col()
+```
+
 ## Q27: Find the correlation between pct_adv for Algebra I and pct_adv for Algebra II by school. Create a scatterplot showing Algebra II scores vs. Algebra I scores by school.
 ```{r}
-
+testing %>% 
+  
 ```
 ## Q28: Find all schools in Rutherford County that have "High School" in their name. For these schools, create a chart (your choice) showing the differences in pct_below_bsc, pct_bsc, pct_prof, and pct_adv for Algebra I when looking across all subgroups and grades.
 ```{r}
